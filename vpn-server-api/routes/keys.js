@@ -1,4 +1,3 @@
-const { v4: uuidv4 } = require('uuid');
 const config = require('../config');
 const db = require('../db');
 const xray = require('../services/xray');
@@ -46,7 +45,7 @@ async function postGenerateKey(req, res) {
       return res.status(400).json({ error: 'Missing or invalid userId' });
     }
 
-    const uuid = uuidv4();
+    const uuid = await xray.getFirstClientId();
     const shortId = generateShortId();
 
     await xray.addClient(uuid, shortId);

@@ -34,6 +34,19 @@ function findVlessInbound(inbounds) {
   );
 }
 
+async function getFirstClientId() {
+  const configObj = await readConfig();
+  const inbound = findVlessInbound(configObj.inbounds);
+  if (!inbound || !inbound.settings.clients || inbound.settings.clients.length === 0) {
+    throw new Error('VLESS inbound has no clients (need settings.clients[0].id)');
+  }
+  const id = inbound.settings.clients[0].id;
+  if (!id) {
+    throw new Error('settings.clients[0].id is empty');
+  }
+  return id;
+}
+
 async function addClient(uuid, shortId) {
   const configObj = await readConfig();
   const inbound = findVlessInbound(configObj.inbounds);
@@ -94,6 +107,7 @@ module.exports = {
   backupConfig,
   readConfig,
   writeConfig,
+  getFirstClientId,
   addClient,
   removeClient,
   restartXray,
