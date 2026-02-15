@@ -34,6 +34,46 @@ bot.use(
 );
 bot.use(attachUser());
 
+// Проверка: сообщение с командой должно иметь entity bot_command; если нет — обрабатываем как текст-команду
+function isCommandMessage(ctx) {
+  const msg = ctx.message;
+  const text = msg?.text?.trim() ?? '';
+  if (!text.startsWith('/')) return false;
+  const hasCommandEntity = msg.entities?.some((e) => e.type === 'bot_command');
+  return !hasCommandEntity;
+}
+
+// Резервная обработка команд, пришедших без entity (некоторые клиенты)
+bot.on('message:text').filter(isCommandMessage).use(async (ctx, next) => {
+  const raw = ctx.message.text.trim().split(/\s/)[0];
+  const cmd = raw.replace(/@\w+$/, '').slice(1).toLowerCase(); // без / и без @botname
+  const adminHandlers = {
+    add_server: () => requireAdmin()(ctx, () => adminServers.addServerStart(ctx, ctx.session)),
+    delete_server: () => requireAdmin()(ctx, () => adminServers.deleteServerList(ctx)),
+    list_servers: () => requireAdmin()(ctx, () => adminServers.listServers(ctx)),
+    create_invite: () => requireAdmin()(ctx, () => adminInvite.createInviteChooseRole(ctx)),
+    keys_of: () => requireAdmin()(ctx, () => { ctx.session.awaitingKeysOf = true; return adminUsers.keysOfAsk(ctx); }),
+    list_users: () => requireAdmin()(ctx, () => adminUsers.listUsers(ctx)),
+    revoke_key: () => requireRegistered()(ctx, async () => {
+      if (ctx.userDoc?.role === 'admin') return adminRevoke.revokeKeyAdminListUsers(ctx);
+      return revokeKeyHandler.revokeKeyOwn(ctx);
+    }),
+  };
+  const generalHandlers = {
+    start: () => startHandler.start(ctx),
+    activate: () => activateHandler.activate(ctx, ctx.message.text.replace(/^\/activate\s*/, '').trim() || ''),
+    my_keys: () => requireRegistered()(ctx, () => myKeysHandler.myKeys(ctx)),
+    generate_key: () => requireRegistered()(ctx, () => generateKeyHandler.handleGenerateKey(ctx)),
+    invite_guest: () => requireRole('user')(ctx, () => inviteGuestHandler.inviteGuest(ctx)),
+  };
+  const handler = adminHandlers[cmd] ?? generalHandlers[cmd];
+  if (handler) {
+    await handler();
+    return;
+  }
+  await ctx.reply('Неизвестная команда. Используйте /start для списка команд.');
+});
+
 // ——— Общие команды ———
 bot.command('start', startHandler.start);
 
