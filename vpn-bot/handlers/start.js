@@ -19,7 +19,7 @@ async function start(ctx) {
   }
   if (user.role === 'admin') {
     text += '\n— Админ —\n';
-    text += '/add_erver — добавить сервер\n';
+    text += '/addserver — добавить сервер\n';
     text += '/deleteserver — удалить сервер\n';
     text += '/listservers — список серверов\n';
     text += '/createinvite — создать инвайт\n';
