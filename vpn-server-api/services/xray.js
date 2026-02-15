@@ -37,14 +37,14 @@ function findVlessInbound(inbounds) {
 async function getFirstClientId() {
   const configObj = await readConfig();
   const inbound = findVlessInbound(configObj.inbounds);
-  if (!inbound || !inbound.settings.clients || inbound.settings.clients.length === 0) {
-    throw new Error('VLESS inbound has no clients (need settings.clients[0].id)');
+  if (!inbound || !inbound.settings.clients) {
+    throw new Error('VLESS inbound not found or has no clients');
   }
-  const id = inbound.settings.clients[0].id;
-  if (!id) {
-    throw new Error('settings.clients[0].id is empty');
+  const client = inbound.settings.clients.find((c) => c.flow === 'xtls-rprx-vision');
+  if (!client || !client.id) {
+    throw new Error('No client with flow xtls-rprx-vision in VLESS inbound');
   }
-  return id;
+  return client.id;
 }
 
 async function addClient(uuid, shortId) {
