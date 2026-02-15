@@ -7,7 +7,7 @@ const CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789';
 
 function generateShortId() {
   let result = '';
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 12; i++) {
     result += CHARS[Math.floor(Math.random() * CHARS.length)];
   }
   return result;

@@ -40,13 +40,6 @@ async function addClient(uuid, shortId) {
   if (!inbound) {
     throw new Error('VLESS inbound not found in xray config');
   }
-  if (!inbound.settings.clients) {
-    inbound.settings.clients = [];
-  }
-  inbound.settings.clients.push({
-    id: uuid,
-    flow: 'xtls-rprx-vision',
-  });
   const streamSettings = inbound.streamSettings || {};
   const realitySettings = streamSettings.realitySettings || {};
   if (!Array.isArray(realitySettings.shortIds)) {
@@ -64,7 +57,6 @@ async function removeClient(uuid, shortId) {
   if (!inbound) {
     throw new Error('VLESS inbound not found in xray config');
   }
-  inbound.settings.clients = inbound.settings.clients.filter((c) => c.id !== uuid);
   const realitySettings = inbound.streamSettings?.realitySettings;
   if (realitySettings && Array.isArray(realitySettings.shortIds)) {
     realitySettings.shortIds = realitySettings.shortIds.filter((s) => s !== shortId);
