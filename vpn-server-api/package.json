@@ -1,0 +1,19 @@
+{
+  "name": "vpn-server-api",
+  "version": "1.0.0",
+  "description": "HTTP API for managing xray (VLESS + XTLS Vision + Reality) keys",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "better-sqlite3": "^11.5.0",
+    "uuid": "^10.0.0"
+  }
+}
