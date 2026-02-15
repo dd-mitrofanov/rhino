@@ -3,14 +3,24 @@ const config = require('../config');
 const db = require('../db');
 const xray = require('../services/xray');
 
-const CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789';
 
+// Функция для генерации 16-символьной hex-строки (аналог openssl rand -hex 8)
 function generateShortId() {
-  let result = '';
-  for (let i = 0; i < 16; i++) {
-    result += CHARS[Math.floor(Math.random() * CHARS.length)];
+  // Создаем массив из 8 случайных байт (криптографически стойкий генератор)
+  const bytes = new Uint8Array(8);
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    crypto.getRandomValues(bytes);
+  } else {
+    // Fallback для сред без Web Crypto API (не рекомендуется для продакшена)
+    for (let i = 0; i < bytes.length; i++) {
+      bytes[i] = Math.floor(Math.random() * 256);
+    }
   }
-  return result;
+
+  // Преобразуем каждый байт в двухсимвольное hex-представление и объединяем
+  return Array.from(bytes)
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
 }
 
 function buildVlessLink(uuid, shortId, keyName) {
@@ -23,6 +33,7 @@ function buildVlessLink(uuid, shortId, keyName) {
     flow: 'xtls-rprx-vision',
     sni: config.realityServerName,
     sid: shortId,
+    headerType: 'none'
   });
   const hash = encodeURIComponent(keyName);
   return `vless://${uuid}@${config.serverIp}:${config.serverPort}?${params.toString()}#${hash}`;
