@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const { Bot, session } = require('grammy');
 const db = require('./db');
 const { attachUser, requireRegistered, requireAdmin, requireRole } = require('./middleware');
