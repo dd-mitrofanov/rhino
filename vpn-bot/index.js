@@ -82,32 +82,32 @@ bot.command('activate', async (ctx) => {
   await activateHandler.activate(ctx, code);
 });
 
-bot.command('my_keys', requireRegistered(), myKeysHandler.myKeys);
-bot.command('generate_key', requireRegistered(), generateKeyHandler.handleGenerateKey);
-bot.command('revoke_key', requireRegistered(), async (ctx) => {
+bot.command('my_eys', requireRegistered(), myKeysHandler.myKeys);
+bot.command('generatekey', requireRegistered(), generateKeyHandler.handleGenerateKey);
+bot.command('revokekey', requireRegistered(), async (ctx) => {
   if (ctx.userDoc.role === 'admin') return adminRevoke.revokeKeyAdminListUsers(ctx);
   return revokeKeyHandler.revokeKeyOwn(ctx);
 });
 
 // ——— Пользователь: пригласить гостя (только роль user, гость не видит команду) ———
-bot.command('invite_guest', requireRole('user'), inviteGuestHandler.inviteGuest);
+bot.command('inviteguest', requireRole('user'), inviteGuestHandler.inviteGuest);
 
 // ——— Админ: серверы ———
-bot.command('add_server', requireAdmin(), async (ctx) => {
+bot.command('addserver', requireAdmin(), async (ctx) => {
   await adminServers.addServerStart(ctx, ctx.session);
 });
-bot.command('delete_server', requireAdmin(), adminServers.deleteServerList);
-bot.command('list_servers', requireAdmin(), adminServers.listServers);
+bot.command('deleteserver', requireAdmin(), adminServers.deleteServerList);
+bot.command('listservers', requireAdmin(), adminServers.listServers);
 
 // ——— Админ: инвайты ———
-bot.command('create_invite', requireAdmin(), adminInvite.createInviteChooseRole);
+bot.command('createinvite', requireAdmin(), adminInvite.createInviteChooseRole);
 
 // ——— Админ: ключи пользователя и список пользователей ———
-bot.command('keys_of', requireAdmin(), (ctx) => {
+bot.command('keysof', requireAdmin(), (ctx) => {
   ctx.session.awaitingKeysOf = true;
   return adminUsers.keysOfAsk(ctx);
 });
-bot.command('list_users', requireAdmin(), adminUsers.listUsers);
+bot.command('listusers', requireAdmin(), adminUsers.listUsers);
 
 // ——— Текстовые сообщения (диалоги) ———
 bot.on('message:text', async (ctx) => {
