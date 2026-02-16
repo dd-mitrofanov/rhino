@@ -21,7 +21,8 @@ async function activate(ctx, code) {
     return false;
   }
   const username = ctx.from.username || null;
-  db.createUser(userId, invite.role, invite.created_by, username);
+  const guestLimit = invite.role === 'user' && invite.guest_limit != null ? invite.guest_limit : 0;
+  db.createUser(userId, invite.role, invite.created_by, username, guestLimit);
   db.useInviteCode(invite.code, userId);
   const roleLabel = invite.role === 'user' ? 'Пользователь' : 'Гость';
   await ctx.reply(`Код активирован! Ваша роль: ${roleLabel}.`);

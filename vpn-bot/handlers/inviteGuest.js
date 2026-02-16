@@ -2,8 +2,19 @@ const db = require('../db');
 const { escapeMarkdown } = require('../utils/escapeMarkdown');
 
 async function inviteGuest(ctx) {
-  const code = db.generateInviteCode();
   const userId = ctx.from.id;
+  const user = db.getUserById(userId);
+  const limit = user?.guest_limit ?? 0;
+  const invited = db.countInvitedGuests(userId);
+
+  if (invited >= limit) {
+    await ctx.reply(
+      `Вы достигли лимита приглашений (${limit} гостей). Обратитесь к администратору для увеличения лимита.`
+    );
+    return;
+  }
+
+  const code = db.generateInviteCode();
   db.createInviteCode(code, 'guest', userId);
   
   // Получаем username бота для формирования ссылки

@@ -13,6 +13,7 @@ const adminServers = require('./handlers/adminServers');
 const adminInvite = require('./handlers/adminInvite');
 const adminRevoke = require('./handlers/adminRevoke');
 const adminUsers = require('./handlers/adminUsers');
+const adminGuestLimit = require('./handlers/adminGuestLimit');
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 if (!BOT_TOKEN) {
@@ -59,6 +60,7 @@ bot.on('message:text').filter(isCommandMessage).use(async (ctx, next) => {
     createinvite: () => requireAdmin()(ctx, () => adminInvite.createInviteChooseRole(ctx)),
     keysof: () => requireAdmin()(ctx, () => { ctx.session.awaitingKeysOf = true; return adminUsers.keysOfAsk(ctx); }),
     listusers: () => requireAdmin()(ctx, () => adminUsers.listUsers(ctx)),
+    setguestlimit: () => requireAdmin()(ctx, () => adminGuestLimit.setGuestLimitAsk(ctx)),
     revokekey: () => requireRegistered()(ctx, async () => {
       if (ctx.userDoc?.role === 'admin') return adminRevoke.revokeKeyAdminListUsers(ctx);
       return revokeKeyHandler.revokeKeyOwn(ctx);
@@ -113,6 +115,7 @@ bot.command('keysof', requireAdmin(), (ctx) => {
   return adminUsers.keysOfAsk(ctx);
 });
 bot.command('listusers', requireAdmin(), adminUsers.listUsers);
+bot.command('setguestlimit', requireAdmin(), adminGuestLimit.setGuestLimitAsk);
 
 // ——— Текстовые сообщения (диалоги) ———
 bot.on('message:text', async (ctx) => {
@@ -124,6 +127,16 @@ bot.on('message:text', async (ctx) => {
     ctx.session.awaitingKeysOf = false;
     await adminUsers.keysOfByUserId(ctx, text);
     return;
+  }
+
+  if (adminInvite.getAwaitingGuestLimitState(ctx.session)) {
+    const handled = await adminInvite.handleGuestLimitMessage(ctx, ctx.session, text);
+    if (handled) return;
+  }
+
+  if (adminGuestLimit.getSetGuestLimitState(ctx.session)) {
+    const handled = await adminGuestLimit.handleSetGuestLimitMessage(ctx, ctx.session, text);
+    if (handled) return;
   }
 
   if (adminServers.getAddServerState(ctx.session)) {
@@ -168,6 +181,7 @@ bot.on('callback_query:data', async (ctx) => {
             [{ text: '🗑 Удалить сервер', callback_data: 'cmd:deleteserver' }],
             [{ text: '📋 Список серверов', callback_data: 'cmd:listservers' }],
             [{ text: '🎫 Создать инвайт', callback_data: 'cmd:createinvite' }],
+            [{ text: '👥 Лимит гостей', callback_data: 'cmd:setguestlimit' }],
             [{ text: '🔑 Ключи пользователя', callback_data: 'cmd:keysof' }],
             [{ text: '👥 Список пользователей', callback_data: 'cmd:listusers' }],
             [{ text: '🔙 Назад', callback_data: 'cmd:start' }],
@@ -204,6 +218,10 @@ bot.on('callback_query:data', async (ctx) => {
       await requireAdmin()(ctx, () => adminUsers.listUsers(ctx));
       return;
     }
+    if (cmd === 'setguestlimit') {
+      await requireAdmin()(ctx, () => adminGuestLimit.setGuestLimitAsk(ctx));
+      return;
+    }
     if (cmd === 'start') {
       await startHandler.start(ctx);
       return;
@@ -224,6 +242,9 @@ bot.on('callback_query:data', async (ctx) => {
 
   if (await adminUsers.keysOfListCallback(ctx)) return;
   if (await adminUsers.keysOfSelectCallback(ctx)) return;
+
+  if (await adminGuestLimit.setGuestLimitListCallback(ctx)) return;
+  if (await adminGuestLimit.setGuestLimitSelectCallback(ctx)) return;
 });
 
 // Ошибки

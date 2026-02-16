@@ -38,6 +38,19 @@ function initSchema(database) {
     // Колонка уже существует, игнорируем ошибку
   }
 
+  // guest_limit: макс. кол-во гостей, которых может пригласить пользователь (только для role=user)
+  try {
+    database.exec(`ALTER TABLE users ADD COLUMN guest_limit INTEGER DEFAULT 0;`);
+  } catch (err) {
+    // Колонка уже существует
+  }
+
+  try {
+    database.exec(`ALTER TABLE invite_codes ADD COLUMN guest_limit INTEGER;`);
+  } catch (err) {
+    // Колонка уже существует
+  }
+
   database.exec(`
     CREATE TABLE IF NOT EXISTS servers (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -84,13 +97,28 @@ function getUserById(userId) {
   return getDb().prepare('SELECT * FROM users WHERE id = ?').get(userId);
 }
 
-function createUser(id, role, invitedBy = null, username = null) {
-  getDb().prepare('INSERT INTO users (id, username, role, invited_by) VALUES (?, ?, ?, ?)').run(id, username, role, invitedBy);
+function createUser(id, role, invitedBy = null, username = null, guestLimit = null) {
+  const stmt = getDb().prepare(
+    'INSERT INTO users (id, username, role, invited_by, guest_limit) VALUES (?, ?, ?, ?, ?)'
+  );
+  stmt.run(id, username, role, invitedBy, guestLimit ?? 0);
   return getUserById(id);
 }
 
 function updateUserUsername(id, username) {
   getDb().prepare('UPDATE users SET username = ? WHERE id = ?').run(username, id);
+}
+
+function updateUserGuestLimit(userId, limit) {
+  getDb().prepare('UPDATE users SET guest_limit = ? WHERE id = ?').run(limit, userId);
+}
+
+function countInvitedGuests(userId) {
+  return getDb()
+    .prepare(
+      `SELECT COUNT(*) AS c FROM users WHERE invited_by = ? AND role = 'guest'`
+    )
+    .get(userId).c;
 }
 
 function getAllUsers() {
@@ -185,10 +213,10 @@ function getInviteByCode(code) {
   return getDb().prepare('SELECT * FROM invite_codes WHERE code = ?').get(code.toLowerCase());
 }
 
-function createInviteCode(code, role, createdBy) {
+function createInviteCode(code, role, createdBy, guestLimit = null) {
   getDb()
-    .prepare('INSERT INTO invite_codes (code, role, created_by) VALUES (?, ?, ?)')
-    .run(code.toLowerCase(), role, createdBy);
+    .prepare('INSERT INTO invite_codes (code, role, created_by, guest_limit) VALUES (?, ?, ?, ?)')
+    .run(code.toLowerCase(), role, createdBy, guestLimit);
 }
 
 function useInviteCode(code, usedBy) {
@@ -212,6 +240,8 @@ module.exports = {
   getUserById,
   createUser,
   updateUserUsername,
+  updateUserGuestLimit,
+  countInvitedGuests,
   getAllUsers,
   getUsersWithKeyCount,
   getAllServers,
