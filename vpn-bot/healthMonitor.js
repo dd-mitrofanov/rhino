@@ -75,6 +75,7 @@ async function trySendRecovery(bot, server) {
   try {
     const message = `✅ Сервер **${escapeMarkdown(server.name)}** снова в строю и готов нагибать РКН пока не ляжет`;
     await sendToAllUsers(bot, message);
+    db.clearLastHealthAlertAt(server.id);
     console.log(`Health monitor: recovery notification sent for server "${server.name}"`);
   } finally {
     recoveryInProgress.delete(server.id);

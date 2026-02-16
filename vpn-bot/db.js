@@ -181,6 +181,10 @@ function setLastHealthAlertAt(serverId) {
     .run(serverId);
 }
 
+function clearLastHealthAlertAt(serverId) {
+  getDb().prepare('DELETE FROM server_health_alerts WHERE server_id = ?').run(serverId);
+}
+
 // --- Keys ---
 function countKeysByUserAndServer(userId, serverId) {
   return getDb()
@@ -270,6 +274,7 @@ module.exports = {
   deleteServer,
   getLastHealthAlertAt,
   setLastHealthAlertAt,
+  clearLastHealthAlertAt,
   countKeysByUserAndServer,
   getKeysByUserId,
   getKeyById,
