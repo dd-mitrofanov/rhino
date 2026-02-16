@@ -38,6 +38,7 @@ function initSchema(database) {
     // Колонка уже существует, игнорируем ошибку
   }
 
+  database.exec(`
     CREATE TABLE IF NOT EXISTS servers (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
