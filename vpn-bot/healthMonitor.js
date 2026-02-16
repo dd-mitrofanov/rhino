@@ -23,6 +23,7 @@ const ALERT_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 часа
 let mainIntervalId = null;
 let rapidIntervalId = null;
 const downServerIds = new Set();
+const recoveryInProgress = new Set(); // предотвращает дублирование уведомления о восстановлении
 
 function canSendAlert(serverId) {
   const lastAt = db.getLastHealthAlertAt(serverId);
@@ -68,10 +69,16 @@ async function handleServerDown(bot, server) {
   console.log(`Health monitor: alert sent for server "${server.name}" to ${users.length} users`);
 }
 
-async function handleServerRecovered(bot, server) {
-  const message = `✅ Сервер **${escapeMarkdown(server.name)}** снова в строю и готов нагибать РКН пока не ляжет`;
-  await sendToAllUsers(bot, message);
-  console.log(`Health monitor: recovery notification sent for server "${server.name}"`);
+async function trySendRecovery(bot, server) {
+  if (recoveryInProgress.has(server.id)) return;
+  recoveryInProgress.add(server.id);
+  try {
+    const message = `✅ Сервер **${escapeMarkdown(server.name)}** снова в строю и готов нагибать РКН пока не ляжет`;
+    await sendToAllUsers(bot, message);
+    console.log(`Health monitor: recovery notification sent for server "${server.name}"`);
+  } finally {
+    recoveryInProgress.delete(server.id);
+  }
 }
 
 async function runMainCheck(bot) {
@@ -84,7 +91,7 @@ async function runMainCheck(bot) {
       if (ok) {
         if (downServerIds.has(server.id)) {
           downServerIds.delete(server.id);
-          await handleServerRecovered(bot, server);
+          await trySendRecovery(bot, server);
         }
       } else {
         console.log(`Health monitor: server "${server.name}" is DOWN`);
@@ -109,7 +116,7 @@ async function runRapidCheck(bot) {
       const { ok } = await api.healthCheck(server);
       if (ok) {
         downServerIds.delete(serverId);
-        await handleServerRecovered(bot, server);
+        await trySendRecovery(bot, server);
       }
     } catch (err) {
       console.error(`Health monitor: rapid check error for "${server.name}":`, err);
