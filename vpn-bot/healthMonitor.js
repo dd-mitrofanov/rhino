@@ -1,7 +1,7 @@
 /**
  * Фоновый мониторинг здоровья VPN-серверов.
- * Раз в 5 минут пингует /health-check каждого сервера.
- * При недоступности: алерт (макс. 1 раз в сутки) + пинг каждые 30 сек до восстановления.
+ * Пингует /health-check каждого сервера. Интервалы задаются через ENV.
+ * При недоступности: алерт (макс. 1 раз в сутки) + пинг до восстановления.
  * При восстановлении — уведомление пользователей.
  */
 
@@ -9,8 +9,15 @@ const db = require('./db');
 const api = require('./api');
 const { escapeMarkdown } = require('./utils/escapeMarkdown');
 
-const INTERVAL_MS = 5 * 60 * 1000; // 5 минут
-const RAPID_INTERVAL_MS = 30 * 1000; // 30 секунд для недоступных серверов
+function parseEnvSeconds(name, defaultSeconds) {
+  const v = process.env[name];
+  if (v == null || v === '') return defaultSeconds * 1000;
+  const n = parseInt(v, 10);
+  return (Number.isNaN(n) || n < 1 ? defaultSeconds : n) * 1000;
+}
+
+const INTERVAL_MS = parseEnvSeconds('HEALTH_CHECK_INTERVAL', 5 * 60); // по умолчанию 5 мин
+const RAPID_INTERVAL_MS = parseEnvSeconds('HEALTH_CHECK_RAPID_INTERVAL', 30); // по умолчанию 30 сек
 const ALERT_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 часа
 
 let mainIntervalId = null;
@@ -38,7 +45,16 @@ async function sendToAllUsers(bot, message) {
 async function handleServerDown(bot, server) {
   downServerIds.add(server.id);
 
-  if (!canSendAlert(server.id)) return;
+  if (!canSendAlert(server.id)) {
+    console.log(`Health monitor: skipping alert for "${server.name}" (cooldown)`);
+    return;
+  }
+
+  const users = db.getAllUsers();
+  if (users.length === 0) {
+    console.warn(`Health monitor: no users to notify for server "${server.name}"`);
+    return;
+  }
 
   const allServers = db.getAllServers();
   const otherServers = allServers.filter((s) => s.id !== server.id);
@@ -49,7 +65,7 @@ async function handleServerDown(bot, server) {
   const message = `⚠️ Сервер **${escapeMarkdown(server.name)}** имеет проблемы с подключением. Используйте другие серверы: ${otherNames}`;
   await sendToAllUsers(bot, message);
   db.setLastHealthAlertAt(server.id);
-  console.log(`Health monitor: alert sent for server "${server.name}"`);
+  console.log(`Health monitor: alert sent for server "${server.name}" to ${users.length} users`);
 }
 
 async function handleServerRecovered(bot, server) {
@@ -71,6 +87,7 @@ async function runMainCheck(bot) {
           await handleServerRecovered(bot, server);
         }
       } else {
+        console.log(`Health monitor: server "${server.name}" is DOWN`);
         await handleServerDown(bot, server);
       }
     } catch (err) {
@@ -105,7 +122,7 @@ function start(bot) {
   runMainCheck(bot);
   mainIntervalId = setInterval(() => runMainCheck(bot), INTERVAL_MS);
   rapidIntervalId = setInterval(() => runRapidCheck(bot), RAPID_INTERVAL_MS);
-  console.log('Health monitor: started (main 5 min, rapid 30 sec for down servers)');
+  console.log(`Health monitor: started (main ${INTERVAL_MS / 1000}s, rapid ${RAPID_INTERVAL_MS / 1000}s for down servers)`);
 }
 
 function stop() {

@@ -67,11 +67,22 @@ async function healthCheck(server) {
   try {
     const res = await fetch(url, { method: 'GET', signal: controller.signal });
     clearTimeout(timeout);
-    if (!res.ok) return { ok: false };
-    const data = await res.json().catch(() => ({}));
-    return { ok: data?.status === 'active' };
-  } catch {
+    if (!res.ok) {
+      console.warn(`Health check ${url}: HTTP ${res.status}`);
+      return { ok: false };
+    }
+    const data = await res.json().catch((e) => {
+      console.warn(`Health check ${url}: invalid JSON`, e.message);
+      return {};
+    });
+    const ok = data?.status === 'active';
+    if (!ok) {
+      console.warn(`Health check ${url}: status="${data?.status ?? 'undefined'}" (expected "active")`);
+    }
+    return { ok };
+  } catch (err) {
     clearTimeout(timeout);
+    console.warn(`Health check ${url}:`, err.message);
     return { ok: false };
   }
 }
