@@ -55,7 +55,29 @@ async function rejectKey(server, keyId) {
   await request(server.api_url, server.api_token, 'DELETE', `/reject-key/${keyId}`);
 }
 
+/**
+ * Проверка здоровья сервера (GET /health-check, без авторизации).
+ * @param {{ api_url: string }} server
+ * @returns {Promise<{ ok: boolean }>} ok: true если сервер отвечает и status === 'active'
+ */
+async function healthCheck(server) {
+  const url = `${server.api_url.replace(/\/$/, '')}/health-check`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+  try {
+    const res = await fetch(url, { method: 'GET', signal: controller.signal });
+    clearTimeout(timeout);
+    if (!res.ok) return { ok: false };
+    const data = await res.json().catch(() => ({}));
+    return { ok: data?.status === 'active' };
+  } catch {
+    clearTimeout(timeout);
+    return { ok: false };
+  }
+}
+
 module.exports = {
   generateKey,
   rejectKey,
+  healthCheck,
 };

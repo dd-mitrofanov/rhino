@@ -89,6 +89,12 @@ function initSchema(database) {
 
     CREATE INDEX IF NOT EXISTS idx_keys_user_server ON keys(user_id, server_id);
     CREATE INDEX IF NOT EXISTS idx_keys_server_id ON keys(server_id);
+
+    CREATE TABLE IF NOT EXISTS server_health_alerts (
+      server_id INTEGER PRIMARY KEY,
+      last_alert_at DATETIME NOT NULL,
+      FOREIGN KEY (server_id) REFERENCES servers(id)
+    );
   `);
 }
 
@@ -157,8 +163,22 @@ function addServer(name, ip, port, apiToken, apiUrl) {
 }
 
 function deleteServer(serverId) {
+  getDb().prepare('DELETE FROM server_health_alerts WHERE server_id = ?').run(serverId);
   getDb().prepare('DELETE FROM keys WHERE server_id = ?').run(serverId);
   getDb().prepare('DELETE FROM servers WHERE id = ?').run(serverId);
+}
+
+function getLastHealthAlertAt(serverId) {
+  const row = getDb().prepare('SELECT last_alert_at FROM server_health_alerts WHERE server_id = ?').get(serverId);
+  return row ? row.last_alert_at : null;
+}
+
+function setLastHealthAlertAt(serverId) {
+  getDb()
+    .prepare(
+      `INSERT OR REPLACE INTO server_health_alerts (server_id, last_alert_at) VALUES (?, datetime('now'))`
+    )
+    .run(serverId);
 }
 
 // --- Keys ---
@@ -248,6 +268,8 @@ module.exports = {
   getServerById,
   addServer,
   deleteServer,
+  getLastHealthAlertAt,
+  setLastHealthAlertAt,
   countKeysByUserAndServer,
   getKeysByUserId,
   getKeyById,

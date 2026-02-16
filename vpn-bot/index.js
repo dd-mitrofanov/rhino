@@ -14,6 +14,7 @@ const adminInvite = require('./handlers/adminInvite');
 const adminRevoke = require('./handlers/adminRevoke');
 const adminUsers = require('./handlers/adminUsers');
 const adminGuestLimit = require('./handlers/adminGuestLimit');
+const healthMonitor = require('./healthMonitor');
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 if (!BOT_TOKEN) {
@@ -255,6 +256,7 @@ bot.catch((err) => {
 // Graceful shutdown
 async function shutdown(signal) {
   console.log(`${signal} received, stopping bot...`);
+  healthMonitor.stop();
   await bot.stop();
   const database = db.getDb();
   if (database) database.close();
@@ -265,7 +267,10 @@ process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
 
 bot.start({
-  onStart: () => console.log('Bot is running'),
+  onStart: () => {
+    console.log('Bot is running');
+    healthMonitor.start(bot);
+  },
 }).catch((err) => {
   console.error('Failed to start bot:', err);
   process.exit(1);
