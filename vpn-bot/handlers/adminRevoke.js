@@ -9,9 +9,10 @@ async function revokeKeyAdminListUsers(ctx) {
     return;
   }
   const keyboard = {
-    inline_keyboard: withKeys.map((u) => [
-      { text: `${u.id} (${u.role}, ключей: ${u.key_count})`, callback_data: `arevoke_user:${u.id}` },
-    ]),
+    inline_keyboard: withKeys.map((u) => {
+      const userName = u.username ? `@${u.username}` : `ID: ${u.id}`;
+      return [{ text: `${userName} (${u.role}, ключей: ${u.key_count})`, callback_data: `arevoke_user:${u.id}` }];
+    }),
   };
   await ctx.reply('Выберите пользователя:', { reply_markup: keyboard });
 }

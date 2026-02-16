@@ -1,6 +1,6 @@
 const db = require('../db');
 
-const ADD_SERVER_STEPS = ['name', 'ip', 'port', 'api_token', 'api_url'];
+const ADD_SERVER_STEPS = ['name', 'ip', 'port', 'api_token'];
 
 function getAddServerState(session) {
   return session?.addServer;
@@ -49,16 +49,12 @@ async function addServerHandleMessage(ctx, session, text) {
   }
   if (state.step === 'api_token') {
     state.api_token = text.trim();
-    state.step = 'api_url';
-    await ctx.reply('Введите базовый URL API (например: http://1.2.3.4:3000):');
-    return true;
-  }
-  if (state.step === 'api_url') {
-    state.api_url = text.trim().replace(/\/$/, '');
-    const { name, ip, port, api_token, api_url } = state;
+    const { name, ip, port, api_token } = state;
+    // Формируем api_url из IP и порта
+    const api_url = `http://${ip}:${port}`;
     db.addServer(name, ip, port, api_token, api_url);
     clearAddServerState(session);
-    await ctx.reply(`Сервер «${name}» добавлен.`);
+    await ctx.reply(`Сервер «${name}» добавлен.\nAPI URL: ${api_url}`);
     return true;
   }
   return false;

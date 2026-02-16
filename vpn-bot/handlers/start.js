@@ -1,6 +1,23 @@
 const db = require('../db');
 
 async function start(ctx) {
+  const inviteCode = ctx.message?.text?.split(/\s+/)[1]; // Получаем код из /start <code>
+  
+  // Если передан инвайт-код, обрабатываем его как активацию
+  if (inviteCode) {
+    const activateHandler = require('./activate');
+    const activated = await activateHandler.activate(ctx, inviteCode);
+    // Если активация прошла успешно, показываем меню
+    if (activated) {
+      // Обновляем userDoc после активации
+      const db = require('../db');
+      ctx.userDoc = db.getUserById(ctx.from.id);
+      // Продолжаем выполнение для показа меню
+    } else {
+      return; // Активация не удалась, выходим
+    }
+  }
+
   const user = ctx.userDoc;
   if (!user) {
     await ctx.reply(
@@ -9,25 +26,30 @@ async function start(ctx) {
     );
     return;
   }
+  
   const roleLabel = { admin: 'Администратор', user: 'Пользователь', guest: 'Гость' }[user.role];
-  let text = `Добро пожаловать! Вы вошли как **${roleLabel}**.\n\nДоступные команды:\n`;
-  text += '/mykeys — мои ключи\n';
-  text += '/generatekey — создать ключ\n';
-  text += '/revokekey — отозвать ключ\n';
+  const text = `Добро пожаловать! Вы вошли как **${roleLabel}**.\n\nВыберите действие:`;
+  
+  // Формируем кнопки в зависимости от роли
+  const keyboard = {
+    inline_keyboard: [
+      [{ text: '🔑 Мои ключи', callback_data: 'cmd:mykeys' }],
+      [{ text: '➕ Создать ключ', callback_data: 'cmd:generatekey' }],
+      [{ text: '🗑 Отозвать ключ', callback_data: 'cmd:revokekey' }],
+    ],
+  };
+
   if (user.role === 'user') {
-    text += '/inviteguest — пригласить гостя\n';
+    keyboard.inline_keyboard.push([{ text: '👤 Пригласить гостя', callback_data: 'cmd:inviteguest' }]);
   }
+
   if (user.role === 'admin') {
-    text += '\n— Админ —\n';
-    text += '/addserver — добавить сервер\n';
-    text += '/deleteserver — удалить сервер\n';
-    text += '/listservers — список серверов\n';
-    text += '/createinvite — создать инвайт\n';
-    text += '/revokekey — отозвать ключ (любого)\n';
-    text += '/keysof — ключи пользователя\n';
-    text += '/listusers — список пользователей\n';
+    keyboard.inline_keyboard.push(
+      [{ text: '⚙️ Админ панель', callback_data: 'cmd:admin_panel' }]
+    );
   }
-  await ctx.reply(text, { parse_mode: 'Markdown' });
+
+  await ctx.reply(text, { parse_mode: 'Markdown', reply_markup: keyboard });
 }
 
 module.exports = { start };

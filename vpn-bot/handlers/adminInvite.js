@@ -20,9 +20,20 @@ async function createInviteCallback(ctx) {
   const userId = ctx.from.id;
   db.createInviteCode(code, role, userId);
   const roleLabel = role === 'user' ? 'Пользователь' : 'Гость';
-  await ctx.reply(`Инвайт-код (роль: ${roleLabel}):\n\n\`${code}\`\n\nАктивация: /activate ${code}`, {
-    parse_mode: 'Markdown',
-  });
+  
+  // Получаем username бота для формирования ссылки
+  const botInfo = await ctx.api.getMe();
+  const botUsername = botInfo.username;
+  const inviteLink = `https://t.me/${botUsername}?start=${code}`;
+  
+  await ctx.reply(
+    `Инвайт-код (роль: ${roleLabel}):\n\n\`${code}\`\n\n` +
+    `Ссылка для активации:\n${inviteLink}\n\n` +
+    `Или используйте команду: /start ${code}`,
+    {
+      parse_mode: 'Markdown',
+    }
+  );
   return true;
 }
 

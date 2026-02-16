@@ -24,10 +24,12 @@ async function keysOfByUserId(ctx, userIdStr) {
   }
   const keys = db.getKeysByUserId(userId);
   if (keys.length === 0) {
-    await ctx.reply(`У пользователя ${userId} (${user.role}) нет ключей.`);
+    const userName = user.username ? `@${user.username}` : `ID: ${userId}`;
+    await ctx.reply(`У пользователя ${userName} (${user.role}) нет ключей.`);
     return true;
   }
-  let text = `Ключи пользователя ${userId} (${user.role}):\n\n`;
+  const userName = user.username ? `@${user.username}` : `ID: ${userId}`;
+  let text = `Ключи пользователя ${userName} (${user.role}):\n\n`;
   let currentServer = null;
   for (const k of keys) {
     if (k.server_name !== currentServer) {
@@ -50,9 +52,10 @@ async function keysOfListCallback(ctx) {
     return true;
   }
   const keyboard = {
-    inline_keyboard: withKeys.map((u) => [
-      { text: `${u.id} (${u.role}, ключей: ${u.key_count})`, callback_data: `keysof:${u.id}` },
-    ]),
+    inline_keyboard: withKeys.map((u) => {
+      const userName = u.username ? `@${u.username}` : `ID: ${u.id}`;
+      return [{ text: `${userName} (${u.role}, ключей: ${u.key_count})`, callback_data: `keysof:${u.id}` }];
+    }),
   };
   await ctx.reply('Выберите пользователя:', { reply_markup: keyboard });
   return true;
@@ -76,7 +79,8 @@ function listUsers(ctx) {
   let text = '';
   for (const u of rows) {
     const date = u.created_at ? new Date(u.created_at).toLocaleString() : '—';
-    text += `• ${u.id} — ${roleLabel(u.role)}, ключей: ${u.key_count}, зарегистрирован: ${date}\n`;
+    const userName = u.username ? `@${u.username}` : `ID: ${u.id}`;
+    text += `• ${userName} — ${roleLabel(u.role)}, ключей: ${u.key_count}, зарегистрирован: ${date}\n`;
   }
   return ctx.reply(text.trim());
 }

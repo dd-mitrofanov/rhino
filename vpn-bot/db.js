@@ -23,11 +23,20 @@ function initSchema(database) {
   database.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY,
+      username TEXT,
       role TEXT NOT NULL CHECK(role IN ('admin', 'user', 'guest')),
       invited_by INTEGER,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (invited_by) REFERENCES users(id)
     );
+  `);
+  
+  // Добавляем колонку username, если её нет (для существующих БД)
+  try {
+    database.exec(`ALTER TABLE users ADD COLUMN username TEXT;`);
+  } catch (err) {
+    // Колонка уже существует, игнорируем ошибку
+  }
 
     CREATE TABLE IF NOT EXISTS servers (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -74,9 +83,13 @@ function getUserById(userId) {
   return getDb().prepare('SELECT * FROM users WHERE id = ?').get(userId);
 }
 
-function createUser(id, role, invitedBy = null) {
-  getDb().prepare('INSERT INTO users (id, role, invited_by) VALUES (?, ?, ?)').run(id, role, invitedBy);
+function createUser(id, role, invitedBy = null, username = null) {
+  getDb().prepare('INSERT INTO users (id, username, role, invited_by) VALUES (?, ?, ?, ?)').run(id, username, role, invitedBy);
   return getUserById(id);
+}
+
+function updateUserUsername(id, username) {
+  getDb().prepare('UPDATE users SET username = ? WHERE id = ?').run(username, id);
 }
 
 function getAllUsers() {
@@ -86,7 +99,7 @@ function getAllUsers() {
 function getUsersWithKeyCount() {
   const rows = getDb()
     .prepare(
-      `SELECT u.id, u.role, u.created_at, COUNT(k.id) AS key_count
+      `SELECT u.id, u.username, u.role, u.created_at, COUNT(k.id) AS key_count
        FROM users u
        LEFT JOIN keys k ON k.user_id = u.id
        GROUP BY u.id
@@ -197,6 +210,7 @@ module.exports = {
   getDb,
   getUserById,
   createUser,
+  updateUserUsername,
   getAllUsers,
   getUsersWithKeyCount,
   getAllServers,

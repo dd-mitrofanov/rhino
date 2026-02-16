@@ -5,6 +5,11 @@ function attachUser() {
     const id = ctx.from?.id;
     if (id) {
       ctx.userDoc = db.getUserById(id);
+      // Обновляем username, если он изменился
+      if (ctx.userDoc && ctx.from.username !== ctx.userDoc.username) {
+        db.updateUserUsername(id, ctx.from.username || null);
+        ctx.userDoc = db.getUserById(id); // Обновляем объект
+      }
     }
     await next();
   };
