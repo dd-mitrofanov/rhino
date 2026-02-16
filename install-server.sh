@@ -76,7 +76,7 @@ chmod 700 /root/.ssh
 chmod 600 /root/.ssh/authorized_keys
 
 # Перезапуск SSH
-systemctl restart sshd
+systemctl restart ssh
 info "SSH перезапущен. Новый порт: $ssh_port. Не закрывайте текущую сессию, пока не проверите подключение в другом окне!"
 
 # --- 4. Настройка BBR и sysctl ---
