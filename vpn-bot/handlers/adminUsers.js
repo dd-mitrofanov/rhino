@@ -1,4 +1,5 @@
 const db = require('../db');
+const { escapeMarkdown } = require('../utils/escapeMarkdown');
 
 async function keysOfAsk(ctx) {
   await ctx.reply(
@@ -28,15 +29,15 @@ async function keysOfByUserId(ctx, userIdStr) {
     await ctx.reply(`У пользователя ${userName} (${user.role}) нет ключей.`);
     return true;
   }
-  const userName = user.username ? `@${user.username}` : `ID: ${userId}`;
+  const userName = user.username ? `@${escapeMarkdown(user.username)}` : `ID: ${userId}`;
   let text = `Ключи пользователя ${userName} (${user.role}):\n\n`;
   let currentServer = null;
   for (const k of keys) {
     if (k.server_name !== currentServer) {
       currentServer = k.server_name;
-      text += `**${currentServer}**\n`;
+      text += `**${escapeMarkdown(currentServer)}**\n`;
     }
-    text += `• ${k.key_name}\n\`\`\`\n${k.vless_link}\n\`\`\`\n`;
+    text += `• ${escapeMarkdown(k.key_name)}\n\`\`\`\n${escapeMarkdown(k.vless_link)}\n\`\`\`\n`;
   }
   await ctx.reply(text, { parse_mode: 'Markdown' });
   return true;

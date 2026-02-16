@@ -1,15 +1,16 @@
 const db = require('../db');
+const { escapeMarkdown } = require('../utils/escapeMarkdown');
 
 function formatKeysList(keysByServer) {
   const entries = Object.entries(keysByServer);
   if (entries.length === 0) {
-    return 'У вас пока нет ключей. Создайте ключ: /generate_key';
+    return 'У вас пока нет ключей. Используйте кнопку «Создать ключ» или команду /generatekey';
   }
   let text = '';
   for (const [, { serverName, keys }] of entries) {
-    text += `**${serverName}**\n`;
+    text += `**${escapeMarkdown(serverName)}**\n`;
     for (const k of keys) {
-      text += `• ${k.key_name}\n\`\`\`\n${k.vless_link}\n\`\`\`\n`;
+      text += `• ${escapeMarkdown(k.key_name)}\n\`\`\`\n${escapeMarkdown(k.vless_link)}\n\`\`\`\n`;
     }
     text += '\n';
   }

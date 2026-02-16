@@ -43,18 +43,23 @@ function isCommandMessage(ctx) {
   return !hasCommandEntity;
 }
 
+// Нормализация команды: /my_keys и /mykeys → mykeys
+function normalizeCommand(cmd) {
+  return cmd.replace(/_/g, '').toLowerCase();
+}
+
 // Резервная обработка команд, пришедших без entity (некоторые клиенты)
 bot.on('message:text').filter(isCommandMessage).use(async (ctx, next) => {
   const raw = ctx.message.text.trim().split(/\s/)[0];
-  const cmd = raw.replace(/@\w+$/, '').slice(1).toLowerCase(); // без / и без @botname
+  const cmd = normalizeCommand(raw.replace(/@\w+$/, '').slice(1)); // без / и без @botname
   const adminHandlers = {
-    add_server: () => requireAdmin()(ctx, () => adminServers.addServerStart(ctx, ctx.session)),
-    delete_server: () => requireAdmin()(ctx, () => adminServers.deleteServerList(ctx)),
-    list_servers: () => requireAdmin()(ctx, () => adminServers.listServers(ctx)),
-    create_invite: () => requireAdmin()(ctx, () => adminInvite.createInviteChooseRole(ctx)),
-    keys_of: () => requireAdmin()(ctx, () => { ctx.session.awaitingKeysOf = true; return adminUsers.keysOfAsk(ctx); }),
-    list_users: () => requireAdmin()(ctx, () => adminUsers.listUsers(ctx)),
-    revoke_key: () => requireRegistered()(ctx, async () => {
+    addserver: () => requireAdmin()(ctx, () => adminServers.addServerStart(ctx, ctx.session)),
+    deleteserver: () => requireAdmin()(ctx, () => adminServers.deleteServerList(ctx)),
+    listservers: () => requireAdmin()(ctx, () => adminServers.listServers(ctx)),
+    createinvite: () => requireAdmin()(ctx, () => adminInvite.createInviteChooseRole(ctx)),
+    keysof: () => requireAdmin()(ctx, () => { ctx.session.awaitingKeysOf = true; return adminUsers.keysOfAsk(ctx); }),
+    listusers: () => requireAdmin()(ctx, () => adminUsers.listUsers(ctx)),
+    revokekey: () => requireRegistered()(ctx, async () => {
       if (ctx.userDoc?.role === 'admin') return adminRevoke.revokeKeyAdminListUsers(ctx);
       return revokeKeyHandler.revokeKeyOwn(ctx);
     }),
@@ -62,9 +67,9 @@ bot.on('message:text').filter(isCommandMessage).use(async (ctx, next) => {
   const generalHandlers = {
     start: () => startHandler.start(ctx),
     activate: () => activateHandler.activate(ctx, ctx.message.text.replace(/^\/activate\s*/, '').trim() || ''),
-    my_keys: () => requireRegistered()(ctx, () => myKeysHandler.myKeys(ctx)),
-    generate_key: () => requireRegistered()(ctx, () => generateKeyHandler.handleGenerateKey(ctx)),
-    invite_guest: () => requireRole('user')(ctx, () => inviteGuestHandler.inviteGuest(ctx)),
+    mykeys: () => requireRegistered()(ctx, () => myKeysHandler.myKeys(ctx)),
+    generatekey: () => requireRegistered()(ctx, () => generateKeyHandler.handleGenerateKey(ctx)),
+    inviteguest: () => requireRole('user')(ctx, () => inviteGuestHandler.inviteGuest(ctx)),
   };
   const handler = adminHandlers[cmd] ?? generalHandlers[cmd];
   if (handler) {
@@ -82,7 +87,7 @@ bot.command('activate', async (ctx) => {
   await activateHandler.activate(ctx, code);
 });
 
-bot.command('my_eys', requireRegistered(), myKeysHandler.myKeys);
+bot.command('mykeys', requireRegistered(), myKeysHandler.myKeys);
 bot.command('generatekey', requireRegistered(), generateKeyHandler.handleGenerateKey);
 bot.command('revokekey', requireRegistered(), async (ctx) => {
   if (ctx.userDoc.role === 'admin') return adminRevoke.revokeKeyAdminListUsers(ctx);

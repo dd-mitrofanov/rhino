@@ -1,4 +1,5 @@
 const db = require('../db');
+const { escapeMarkdown } = require('../utils/escapeMarkdown');
 
 async function createInviteChooseRole(ctx) {
   const keyboard = {
@@ -27,9 +28,9 @@ async function createInviteCallback(ctx) {
   const inviteLink = `https://t.me/${botUsername}?start=${code}`;
   
   await ctx.reply(
-    `Инвайт-код (роль: ${roleLabel}):\n\n\`${code}\`\n\n` +
-    `Ссылка для активации:\n${inviteLink}\n\n` +
-    `Или используйте команду: /start ${code}`,
+    `Инвайт-код (роль: ${roleLabel}):\n\n\`${escapeMarkdown(code)}\`\n\n` +
+    `Ссылка для активации:\n${escapeMarkdown(inviteLink)}\n\n` +
+    `Или используйте команду: /start ${escapeMarkdown(code)}`,
     {
       parse_mode: 'Markdown',
     }

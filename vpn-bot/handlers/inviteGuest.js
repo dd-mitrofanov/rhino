@@ -1,4 +1,5 @@
 const db = require('../db');
+const { escapeMarkdown } = require('../utils/escapeMarkdown');
 
 async function inviteGuest(ctx) {
   const code = db.generateInviteCode();
@@ -11,9 +12,9 @@ async function inviteGuest(ctx) {
   const inviteLink = `https://t.me/${botUsername}?start=${code}`;
   
   await ctx.reply(
-    `Одноразовый инвайт-код для гостя:\n\n\`${code}\`\n\n` +
-    `Ссылка для активации:\n${inviteLink}\n\n` +
-    `Передайте ссылку тому, кого хотите пригласить. Или используйте команду: /start ${code}`,
+    `Одноразовый инвайт-код для гостя:\n\n\`${escapeMarkdown(code)}\`\n\n` +
+    `Ссылка для активации:\n${escapeMarkdown(inviteLink)}\n\n` +
+    `Передайте ссылку тому, кого хотите пригласить. Или используйте команду: /start ${escapeMarkdown(code)}`,
     {
       parse_mode: 'Markdown',
     }

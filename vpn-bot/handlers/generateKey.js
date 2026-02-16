@@ -1,5 +1,6 @@
 const db = require('../db');
 const api = require('../api');
+const { escapeMarkdown } = require('../utils/escapeMarkdown');
 
 const KEY_LIMIT = 2;
 
@@ -49,8 +50,8 @@ async function handleGenerateKeyCallback(ctx) {
       result.keyName,
       result.vlessLink
     );
-    await ctx.api.editMessageText(ctx.chat.id, msg.message_id, 
-      `Ключ создан (${server.name}):\n\n\`\`\`\n${result.vlessLink}\n\`\`\``,
+    await ctx.api.editMessageText(ctx.chat.id, msg.message_id,
+      `Ключ создан (${escapeMarkdown(server.name)}):\n\n\`\`\`\n${escapeMarkdown(result.vlessLink)}\n\`\`\``,
       { parse_mode: 'Markdown' }
     );
   } catch (err) {

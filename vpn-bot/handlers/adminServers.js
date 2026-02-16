@@ -1,4 +1,5 @@
 const db = require('../db');
+const { escapeMarkdown } = require('../utils/escapeMarkdown');
 
 const ADD_SERVER_STEPS = ['name', 'ip', 'port', 'api_token'];
 
@@ -127,7 +128,7 @@ function listServers(ctx) {
   }
   let text = '';
   for (const s of servers) {
-    text += `**${s.name}**\n  IP: ${s.ip}:${s.port}\n  API: ${s.api_url}\n\n`;
+    text += `**${escapeMarkdown(s.name)}**\n  IP: ${escapeMarkdown(s.ip)}:${s.port}\n  API: ${escapeMarkdown(s.api_url)}\n\n`;
   }
   return ctx.reply(text.trim(), { parse_mode: 'Markdown' });
 }
