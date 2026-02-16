@@ -51,7 +51,7 @@ async function handleGenerateKeyCallback(ctx) {
       result.vlessLink
     );
     await ctx.api.editMessageText(ctx.chat.id, msg.message_id,
-      `Ключ создан (${escapeMarkdown(server.name)}):\n\n\`\`\`\n${escapeMarkdown(result.vlessLink)}\n\`\`\``,
+      `Ключ создан (${escapeMarkdown(server.name)}):\n\n\`\`\`\n${result.vlessLink}\n\`\`\``,
       { parse_mode: 'Markdown' }
     );
   } catch (err) {

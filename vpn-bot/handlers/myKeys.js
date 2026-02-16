@@ -10,7 +10,7 @@ function formatKeysList(keysByServer) {
   for (const [, { serverName, keys }] of entries) {
     text += `**${escapeMarkdown(serverName)}**\n`;
     for (const k of keys) {
-      text += `• ${escapeMarkdown(k.key_name)}\n\`\`\`\n${escapeMarkdown(k.vless_link)}\n\`\`\`\n`;
+      text += `• ${escapeMarkdown(k.key_name)}\n\`\`\`\n${k.vless_link}\n\`\`\`\n`;
     }
     text += '\n';
   }

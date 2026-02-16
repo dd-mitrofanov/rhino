@@ -37,7 +37,7 @@ async function keysOfByUserId(ctx, userIdStr) {
       currentServer = k.server_name;
       text += `**${escapeMarkdown(currentServer)}**\n`;
     }
-    text += `• ${escapeMarkdown(k.key_name)}\n\`\`\`\n${escapeMarkdown(k.vless_link)}\n\`\`\`\n`;
+    text += `• ${escapeMarkdown(k.key_name)}\n\`\`\`\n${k.vless_link}\n\`\`\`\n`;
   }
   await ctx.reply(text, { parse_mode: 'Markdown' });
   return true;
