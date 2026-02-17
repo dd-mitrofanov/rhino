@@ -45,12 +45,6 @@ function initSchema(database) {
     // Колонка уже существует
   }
 
-  try {
-    database.exec(`ALTER TABLE invite_codes ADD COLUMN guest_limit INTEGER;`);
-  } catch (err) {
-    // Колонка уже существует
-  }
-
   database.exec(`
     CREATE TABLE IF NOT EXISTS servers (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -86,7 +80,16 @@ function initSchema(database) {
       FOREIGN KEY (created_by) REFERENCES users(id),
       FOREIGN KEY (used_by) REFERENCES users(id)
     );
+  `);
 
+  // guest_limit для invite_codes: лимит гостей, который получит приглашённый user
+  try {
+    database.exec(`ALTER TABLE invite_codes ADD COLUMN guest_limit INTEGER;`);
+  } catch (err) {
+    // Колонка уже существует
+  }
+
+  database.exec(`
     CREATE INDEX IF NOT EXISTS idx_keys_user_server ON keys(user_id, server_id);
     CREATE INDEX IF NOT EXISTS idx_keys_server_id ON keys(server_id);
 
