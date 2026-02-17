@@ -101,8 +101,13 @@ XRAY_BIN=$(command -v xray 2>/dev/null || echo "/usr/local/bin/xray")
 # Xray выводит в stderr, поэтому перенаправляем 2>&1
 uuid=$("$XRAY_BIN" uuid 2>&1 | tr -d '\r\n')
 keys=$("$XRAY_BIN" x25519 2>&1)
-private_key=$(echo "$keys" | grep -i "Private" | sed 's/^[^:]*: *//' | tr -d '\r\n')
+
+# Поддержка двух форматов вывода:
+# 1) Стандартный Xray: "Private key:" и "Public key:"
+# 2) Альтернативный (некоторые форки): "PrivateKey:" и "Password:" (Password = public key)
+private_key=$(echo "$keys" | grep -i "Private" | head -1 | sed 's/^[^:]*: *//' | tr -d '\r\n')
 public_key=$(echo "$keys" | grep -i "Public" | sed 's/^[^:]*: *//' | tr -d '\r\n')
+[[ -z "$public_key" ]] && public_key=$(echo "$keys" | grep -i "Password" | head -1 | sed 's/^[^:]*: *//' | tr -d '\r\n')
 
 if [[ -z "$uuid" ]] || [[ -z "$private_key" ]] || [[ -z "$public_key" ]]; then
     error "Не удалось сгенерировать ключи XRay. Вывод uuid: '$uuid', keys: '$keys'"
