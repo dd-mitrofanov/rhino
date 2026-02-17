@@ -95,10 +95,18 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 
 # --- 6. Генерация ключей и UUID ---
 info "Генерация ключей XRay..."
-uuid=$(/usr/local/bin/xray uuid)
-keys=$(/usr/local/bin/xray x25519)
-private_key=$(echo "$keys" | grep "Private" | awk '{print $3}')
-public_key=$(echo "$keys" | grep "Public" | awk '{print $3}')
+XRAY_BIN=$(command -v xray 2>/dev/null || echo "/usr/local/bin/xray")
+[[ -x "$XRAY_BIN" ]] || error "Xray не найден. Установка могла завершиться с ошибкой."
+
+# Xray выводит в stderr, поэтому перенаправляем 2>&1
+uuid=$("$XRAY_BIN" uuid 2>&1 | tr -d '\r\n')
+keys=$("$XRAY_BIN" x25519 2>&1)
+private_key=$(echo "$keys" | grep -i "Private" | sed 's/^[^:]*: *//' | tr -d '\r\n')
+public_key=$(echo "$keys" | grep -i "Public" | sed 's/^[^:]*: *//' | tr -d '\r\n')
+
+if [[ -z "$uuid" ]] || [[ -z "$private_key" ]] || [[ -z "$public_key" ]]; then
+    error "Не удалось сгенерировать ключи XRay. Вывод uuid: '$uuid', keys: '$keys'"
+fi
 
 # --- 7. Создание конфигурации XRay ---
 info "Создание конфигурационного файла /usr/local/etc/xray/config.json..."
